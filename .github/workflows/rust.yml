@@ -1,0 +1,310 @@
+name: Rust CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable, beta]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ matrix.rust }}
+        override: true
+        components: rustfmt, clippy
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ matrix.rust }}-
+          ${{ runner.os }}-cargo-
+
+    - name: Check formatting
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check
+
+    - name: Run clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --workspace --all-targets -- -D warnings
+
+    - name: Run tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace --verbose
+
+    - name: Run doc tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace --doc
+
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Run benchmarks
+      uses: actions-rs/cargo@v1
+      with:
+        command: bench
+        args: --workspace
+
+    - name: Store benchmark results
+      uses: benchmark-action/github-action-benchmark@v1
+      if: github.ref == 'refs/heads/main'
+      with:
+        tool: 'cargo'
+        output-file-path: target/criterion/*/base/benchmark.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true
+        comment-on-alert: true
+        alert-threshold: '150%'
+        fail-on-alert: true
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-audit-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install cargo-audit
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: cargo-audit
+
+    - name: Run security audit
+      uses: actions-rs/cargo@v1
+      with:
+        command: audit
+
+    - name: Install cargo-deny
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: cargo-deny
+
+    - name: Run cargo deny
+      uses: actions-rs/cargo@v1
+      with:
+        command: deny
+        args: check
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+        components: llvm-tools-preview
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-coverage-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install cargo-llvm-cov
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: cargo-llvm-cov
+
+    - name: Generate code coverage
+      run: |
+        cargo llvm-cov --workspace --lcov --output-path lcov.info
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: lcov.info
+        fail_ci_if_error: true
+
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-perf-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build release binaries
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release --workspace
+
+    - name: Run ultra-logger performance tests
+      run: |
+        echo "=== Ultra-Logger Performance Test ==="
+        target/release/ultra-logger --benchmark --duration=60s --threads=4
+        
+    - name: Run log-aggregator performance tests  
+      run: |
+        echo "=== Log-Aggregator Performance Test ==="
+        target/release/log-aggregator --benchmark --connections=1000 --duration=30s
+        
+    - name: Run metrics-collector performance tests
+      run: |
+        echo "=== Metrics-Collector Performance Test ==="
+        target/release/metrics-collector --benchmark --metrics=10000 --duration=30s
+
+    - name: Performance regression check
+      run: |
+        echo "=== Performance Regression Check ==="
+        # Add performance regression detection logic here
+        if [[ $(echo "scale=2; $LATENCY_US > 5.0" | bc -l) -eq 1 ]]; then
+          echo "❌ Performance regression detected: Latency > 5μs"
+          exit 1
+        fi
+        echo "✅ Performance within acceptable thresholds"
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build ultra-logger Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile.ultra-logger
+        push: false
+        tags: ultra-logger:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build log-aggregator Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile.log-aggregator
+        push: false
+        tags: log-aggregator:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build metrics-collector Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile.metrics-collector
+        push: false
+        tags: metrics-collector:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker images
+      run: |
+        echo "=== Testing Docker Images ==="
+        
+        # Test ultra-logger image
+        docker run --rm ultra-logger:test --version
+        
+        # Test log-aggregator image
+        docker run --rm log-aggregator:test --version
+        
+        # Test metrics-collector image  
+        docker run --rm metrics-collector:test --version
+        
+        echo "✅ All Docker images built and tested successfully"

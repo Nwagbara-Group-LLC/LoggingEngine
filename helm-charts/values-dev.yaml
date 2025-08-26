@@ -1,0 +1,173 @@
+# Development values for ultra-logging-engine
+# Override values for development environment
+
+global:
+  environment: "development"
+  registry: "docker.io"
+  imagePullSecrets: []
+
+# Ultra-Logger Development Configuration
+ultraLogger:
+  replicaCount: 1
+  
+  image:
+    registry: "docker.io"
+    repository: "trading-platform/ultra-logger"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: NodePort
+    port: 8080
+    targetPort: 8080
+    nodePort: 30080
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  
+  config:
+    logLevel: "debug"
+    bufferSize: 524288  # 512KB for dev
+    flushIntervalMs: 1000  # Less aggressive flushing
+    compressionEnabled: false  # Disabled for easier debugging
+    compressionType: "none"
+  
+  persistence:
+    enabled: false  # Use emptyDir for development
+  
+  performance:
+    enableHugepages: false
+    cpuAffinity: false
+    numaTopology: false
+    isolateCpus: ""
+
+# Log Aggregator Development Configuration  
+logAggregator:
+  replicaCount: 1
+  
+  image:
+    registry: "docker.io"
+    repository: "trading-platform/log-aggregator"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: NodePort
+    port: 9090
+    targetPort: 9090
+    nodePort: 30090
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+  
+  config:
+    listenAddress: "0.0.0.0:9090"
+    bufferSize: 262144  # 256KB
+    flushIntervalMs: 2000
+    maxConnections: 100
+
+# Metrics Collector Development Configuration
+metricsCollector:
+  replicaCount: 1
+  
+  image:
+    registry: "docker.io"
+    repository: "trading-platform/metrics-collector"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: NodePort
+    ports:
+      - name: http
+        port: 9091
+        targetPort: 9091
+        nodePort: 30091
+      - name: metrics
+        port: 9092
+        targetPort: 9092
+        nodePort: 30092
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+  
+  config:
+    listenAddress: "0.0.0.0:9091"
+    collectionIntervalMs: 5000  # Less frequent collection
+    retentionHours: 4  # Short retention for dev
+    enablePrometheus: true
+    prometheusPort: 9092
+
+# Disable heavy dependencies for development
+redis:
+  enabled: false
+
+kafka:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+# Minimal security for development
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+      - ALL
+
+# No node restrictions for development
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# No autoscaling for development
+autoscaling:
+  enabled: false
+
+# No pod disruption budget for development
+podDisruptionBudget:
+  enabled: false
+
+# No network policy for development
+networkPolicy:
+  enabled: false
+
+# Simple ingress for development
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: ultra-logging.local
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: metrics.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

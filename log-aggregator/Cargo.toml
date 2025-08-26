@@ -20,7 +20,3 @@ futures = { workspace = true }
 crossbeam-channel = { workspace = true }
 async-trait = { workspace = true }
 uuid = { workspace = true }
-
-[[bin]]
-name = "log-aggregator"
-path = "src/main.rs"

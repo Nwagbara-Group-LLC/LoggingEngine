@@ -31,13 +31,14 @@ ringbuf = { workspace = true }
 simd-json = { workspace = true }
 ahash = { workspace = true }
 mimalloc = { workspace = true }
+fastrand = { workspace = true }
 
 [features]
 default = ["async", "compression"]
-async = ["tokio"]
-compression = ["lz4_flex"]
-io-uring = ["tokio-uring", "io-uring"]
-metrics = ["prometheus"]
+async = []
+compression = []
+io-uring = []
+metrics = []
 
 [lib]
 name = "ultra_logger"

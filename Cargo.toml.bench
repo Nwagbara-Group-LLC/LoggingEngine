@@ -1,0 +1,16 @@
+[[bench]]
+name = "ultra_logger_benchmarks"
+harness = false
+path = "tests/benchmarks/mod.rs"
+
+[[bin]]
+name = "ultra-logger"
+path = "program/src/main.rs"
+
+[[bin]]
+name = "log-aggregator"
+path = "log-aggregator/src/main.rs"
+
+[[bin]]
+name = "metrics-collector"
+path = "metrics-collector/src/main.rs"

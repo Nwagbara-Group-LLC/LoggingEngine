@@ -4,15 +4,15 @@ members = [
     "hostbuilder",
     "ultra-logger",
     "log-aggregator",
-    "log-shipper",
     "metrics-collector",
-    "trace-processor"
+    "benchmarks"
 ]
 resolver = "2"
 
 [workspace.dependencies]
 # Ultra-low latency dependencies
 tokio = { version = "1.0", features = ["full", "rt-multi-thread"] }
+async-trait = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tracing-opentelemetry = "0.21"
@@ -45,15 +45,25 @@ once_cell = "1.19"
 arc-swap = "1.6"
 flume = "0.11"
 ringbuf = "0.3"
+fastrand = "2.0"
 
 # Performance optimization
 simd-json = "0.13"
 ahash = "0.8"
 mimalloc = { version = "0.1", default-features = false }
 
-# Async runtime optimization
-tokio-uring = { version = "0.4", optional = true }
-io-uring = { version = "0.6", optional = true }
+# Testing dependencies
+criterion = { version = "0.5", features = ["html_reports"] }
+tempfile = "3.8"
+testcontainers = "0.15"
+wiremock = "0.5"
+proptest = "1.4"
+quickcheck = "1.0"
+mockall = "0.12"
+serial_test = "3.0"
+rstest = "0.18"
+tokio-test = "0.4"
+tracing-test = "0.2"
 
 [workspace.package]
 version = "0.1.0"

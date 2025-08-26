@@ -21,7 +21,3 @@ crossbeam-channel = { workspace = true }
 async-trait = { workspace = true }
 uuid = { workspace = true }
 prometheus = "0.13"
-
-[[bin]]
-name = "metrics-collector"
-path = "src/main.rs"

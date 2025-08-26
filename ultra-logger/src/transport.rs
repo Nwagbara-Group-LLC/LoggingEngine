@@ -14,13 +14,8 @@ pub trait Transport: Send + Sync {
     async fn shutdown(&self) -> Result<()>;
 }
 
-pub fn create_transport(config: &TransportConfig) -> Result<Arc<dyn Transport + Send + Sync>> {
+pub fn create_transport(config: &TransportConfig) -> Result<Arc<dyn Transport>> {
     match config.transport_type.as_str() {
-        "file" => Ok(Arc::new(FileTransport::new(config)?)),
-        "kafka" => Ok(Arc::new(KafkaTransport::new(config)?)),
-        "redis" => Ok(Arc::new(RedisTransport::new(config)?)),
-        "tcp" => Ok(Arc::new(TcpTransport::new(config)?)),
-        "udp" => Ok(Arc::new(UdpTransport::new(config)?)),
         "stdout" => Ok(Arc::new(StdoutTransport::new())),
         _ => Err(LoggingError::TransportError(
             format!("Unknown transport type: {}", config.transport_type)

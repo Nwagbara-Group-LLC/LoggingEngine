@@ -7,7 +7,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::RwLock;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct LoggingMetrics {
     // Performance Metrics
     pub entries_logged: AtomicU64,
@@ -263,7 +263,7 @@ impl LoggingMetrics {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct MetricsSummary {
     pub entries_logged: u64,
     pub entries_dropped: u64,
@@ -284,7 +284,7 @@ pub struct MetricsSummary {
 
 impl MetricsSummary {
     pub fn to_json(&self) -> Result<String> {
-        serde_json::to_string(self).map_err(LoggingError::SerializationError)
+        serde_json::to_string(self).map_err(|e| LoggingError::SerializationError(e.to_string()))
     }
     
     pub fn to_prometheus_format(&self) -> String {
