@@ -1,0 +1,314 @@
+# Ultra-Low Latency Logging Engine Configuration
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+  
+# Ultra-logger service configuration
+ultraLogger:
+  enabled: true
+  replicaCount: 3
+  image:
+    registry: docker.io
+    repository: trading-platform/ultra-logger
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+  
+  # Ultra-low latency optimizations
+  performance:
+    enableHugepages: true
+    cpuAffinity: true
+    numaTopology: true
+    isolateCpus: "2-5"  # Isolate CPUs for critical processes
+  
+  config:
+    logLevel: "info"
+    bufferSize: 1048576  # 1MB buffer
+    flushIntervalMs: 100
+    compressionEnabled: true
+    compressionType: "lz4"  # Fast compression
+    
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    
+  # Persistence for logs
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: "fast-ssd"
+    accessModes:
+      - ReadWriteOnce
+
+# Log aggregator configuration
+logAggregator:
+  enabled: true
+  replicaCount: 2
+  image:
+    registry: docker.io
+    repository: trading-platform/log-aggregator
+    tag: "latest"
+    pullPolicy: IfNotPresent
+    
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+  
+  config:
+    listenAddress: "0.0.0.0:9090"
+    bufferSize: 2097152  # 2MB buffer
+    flushIntervalMs: 500
+    maxConnections: 1000
+    
+  service:
+    type: ClusterIP
+    port: 9090
+    targetPort: 9090
+
+# Metrics collector configuration
+metricsCollector:
+  enabled: true
+  replicaCount: 1
+  image:
+    registry: docker.io
+    repository: trading-platform/metrics-collector
+    tag: "latest"
+    pullPolicy: IfNotPresent
+    
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+      
+  config:
+    listenAddress: "0.0.0.0:9091"
+    collectionIntervalMs: 1000
+    retentionHours: 24
+    enablePrometheus: true
+    prometheusPort: 9092
+    
+  service:
+    type: ClusterIP
+    ports:
+      - name: metrics
+        port: 9091
+        targetPort: 9091
+      - name: prometheus
+        port: 9092
+        targetPort: 9092
+
+# Log shipper configuration
+logShipper:
+  enabled: true
+  replicaCount: 2
+  image:
+    registry: docker.io
+    repository: trading-platform/log-shipper
+    tag: "latest"
+    pullPolicy: IfNotPresent
+    
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+      
+  config:
+    batchSize: 1000
+    batchTimeoutMs: 5000
+    retryAttempts: 3
+    retryBackoffMs: 1000
+
+# Trace processor configuration  
+traceProcessor:
+  enabled: true
+  replicaCount: 1
+  image:
+    registry: docker.io
+    repository: trading-platform/trace-processor
+    tag: "latest"
+    pullPolicy: IfNotPresent
+    
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+      
+  config:
+    samplingRate: 0.1  # 10% sampling
+    maxSpanDuration: 60000  # 60 seconds
+    batchSize: 500
+
+# Storage backend configurations
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    resources:
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: "fast-ssd"
+
+kafka:
+  enabled: false  # Disable by default, enable for high-throughput scenarios
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: "fast-ssd"
+
+# Monitoring and observability
+prometheus:
+  enabled: true
+  server:
+    resources:
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: "fast-ssd"
+
+grafana:
+  enabled: true
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+  persistence:
+    enabled: true
+    size: 5Gi
+
+# Security settings
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    - from: []
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 9091
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Horizontal pod autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node affinity and tolerations for performance
+nodeAffinity:
+  requiredDuringSchedulingIgnoredDuringExecution:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: node-type
+        operator: In
+        values:
+        - trading
+        - high-performance
+
+tolerations:
+  - key: "trading-workload"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+# Trading-specific configurations
+trading:
+  # Enable real-time log streaming for critical trading events
+  realTimeStreaming:
+    enabled: true
+    endpoints:
+      - "trading-engine"
+      - "risk-manager"
+      - "order-router"
+  
+  # Circuit breaker configuration
+  circuitBreaker:
+    enabled: true
+    failureThreshold: 10
+    resetTimeoutMs: 30000
+    
+  # Performance monitoring
+  performanceMonitoring:
+    enabled: true
+    latencyThresholds:
+      p50: 100   # 100 microseconds
+      p95: 500   # 500 microseconds
+      p99: 1000  # 1 millisecond

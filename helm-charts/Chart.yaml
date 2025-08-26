@@ -1,0 +1,31 @@
+apiVersion: v2
+name: ultra-logging-engine
+description: Ultra-low latency logging infrastructure for trading systems
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - logging
+  - trading
+  - high-frequency
+  - ultra-low-latency
+  - observability
+home: https://github.com/trading-platform/logging-engine
+sources:
+  - https://github.com/trading-platform/logging-engine
+maintainers:
+  - name: Trading Platform Team
+    email: team@trading-platform.com
+dependencies:
+  - name: redis
+    version: 17.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: kafka
+    version: 22.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled
+  - name: prometheus
+    version: 23.x.x
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled

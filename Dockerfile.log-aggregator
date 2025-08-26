@@ -1,0 +1,63 @@
+# Log Aggregator Docker Image
+# Optimized for high-throughput log collection and routing
+
+# Build stage
+FROM rust:1.75-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up the workspace
+WORKDIR /workspace
+
+# Copy workspace Cargo files
+COPY Cargo.toml Cargo.lock ./
+COPY ultra-logger/Cargo.toml ./ultra-logger/
+COPY log-aggregator/Cargo.toml ./log-aggregator/
+
+# Copy source code
+COPY ultra-logger/src ./ultra-logger/src
+COPY log-aggregator/src ./log-aggregator/src
+
+# Build with optimizations
+ENV RUSTFLAGS="-C target-cpu=native -C opt-level=3"
+RUN cargo build --release --package log-aggregator
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash --user-group --uid 1000 trading
+
+# Copy the binary
+COPY --from=builder /workspace/target/release/log-aggregator /usr/local/bin/log-aggregator
+
+# Create necessary directories
+RUN mkdir -p /var/log/aggregator /var/cache/aggregator \
+    && chown -R trading:trading /var/log/aggregator /var/cache/aggregator
+
+# Switch to non-root user
+USER trading
+
+# Set working directory
+WORKDIR /home/trading
+
+# Expose ports
+EXPOSE 9090
+
+# Health check
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:9090/health || exit 1
+
+# Set environment variables
+ENV RUST_LOG=info
+
+# Run the application
+CMD ["/usr/local/bin/log-aggregator"]

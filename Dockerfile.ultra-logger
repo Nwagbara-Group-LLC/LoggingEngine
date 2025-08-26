@@ -1,0 +1,67 @@
+# Ultra-Logger Docker Image
+# Multi-stage build for optimal performance and security
+
+# Build stage
+FROM rust:1.75-slim as builder
+
+# Install system dependencies for ultra-low latency optimizations
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libnuma-dev \
+    libhugetlbfs-dev \
+    gcc-multilib \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up the workspace
+WORKDIR /workspace
+
+# Copy workspace Cargo files first for better layer caching
+COPY Cargo.toml Cargo.lock ./
+COPY ultra-logger/Cargo.toml ./ultra-logger/
+
+# Copy source code
+COPY ultra-logger/src ./ultra-logger/src
+
+# Build with ultra-low latency optimizations
+ENV RUSTFLAGS="-C target-cpu=native -C opt-level=3 -C lto=fat -C codegen-units=1"
+RUN cargo build --release --package ultra-logger
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install minimal runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libnuma1 \
+    libhugetlbfs0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash --user-group --uid 1000 trading
+
+# Copy the binary
+COPY --from=builder /workspace/target/release/ultra-logger /usr/local/bin/ultra-logger
+
+# Create necessary directories
+RUN mkdir -p /var/log/trading /var/cache/ultra-logger /tmp/ultra-logger \
+    && chown -R trading:trading /var/log/trading /var/cache/ultra-logger /tmp/ultra-logger
+
+# Switch to non-root user
+USER trading
+
+# Set working directory
+WORKDIR /home/trading
+
+# Expose ports
+EXPOSE 8080 9090
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Set environment variables for performance
+ENV MALLOC_ARENA_MAX=2
+ENV MALLOC_MMAP_THRESHOLD=131072
+ENV RUST_LOG=info
+
+# Run the application
+CMD ["/usr/local/bin/ultra-logger"]

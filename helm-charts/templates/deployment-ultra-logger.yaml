@@ -1,0 +1,159 @@
+{{- if .Values.ultraLogger.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ultra-logger.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.ultraLogger.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "ultra-logger.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap-ultra-logger.yaml") . | sha256sum }}
+        {{- with .Values.ultraLogger.performance }}
+        {{- include "trading.annotations" . | nindent 8 }}
+        {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "ultra-logger.selectorLabels" . | nindent 8 }}
+        trading.platform/service: "ultra-logger"
+        trading.platform/criticality: "high"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ultra-logging-engine.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+          {{- toYaml . | nindent 10 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: ultra-logger
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        image: "{{ .Values.ultraLogger.image.registry }}/{{ .Values.ultraLogger.image.repository }}:{{ .Values.ultraLogger.image.tag }}"
+        imagePullPolicy: {{ .Values.ultraLogger.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.ultraLogger.resources | nindent 10 }}
+        env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-config
+              key: log_level
+        - name: BUFFER_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-config
+              key: buffer_size
+        - name: FLUSH_INTERVAL_MS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-config
+              key: flush_interval_ms
+        - name: COMPRESSION_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-config
+              key: compression_enabled
+        - name: COMPRESSION_TYPE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-config
+              key: compression_type
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: log-storage
+          mountPath: /var/log/trading
+        - name: tmp
+          mountPath: /tmp
+        - name: cache
+          mountPath: /var/cache/ultra-logger
+        {{- if .Values.ultraLogger.performance.enableHugepages }}
+        - name: hugepages
+          mountPath: /dev/hugepages
+        {{- end }}
+      volumes:
+      - name: log-storage
+        {{- if .Values.ultraLogger.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-storage
+        {{- else }}
+        emptyDir:
+          sizeLimit: 10Gi
+        {{- end }}
+      - name: tmp
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: cache
+        emptyDir:
+          sizeLimit: 5Gi
+      {{- if .Values.ultraLogger.performance.enableHugepages }}
+      - name: hugepages
+        emptyDir:
+          medium: HugePages-2Mi
+          sizeLimit: {{ .Values.ultraLogger.resources.requests.memory }}
+      {{- end }}
+      {{- with .Values.ultraLogger.performance }}
+      {{- if .cpuAffinity }}
+      runtimeClassName: performance
+      {{- end }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+{{- end }}

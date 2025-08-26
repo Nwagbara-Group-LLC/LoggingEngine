@@ -1,0 +1,99 @@
+{{- if .Values.ultraLogger.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ultra-logger.labels" . | nindent 4 }}
+data:
+  log_level: {{ .Values.ultraLogger.config.logLevel | quote }}
+  buffer_size: {{ .Values.ultraLogger.config.bufferSize | quote }}
+  flush_interval_ms: {{ .Values.ultraLogger.config.flushIntervalMs | quote }}
+  compression_enabled: {{ .Values.ultraLogger.config.compressionEnabled | quote }}
+  compression_type: {{ .Values.ultraLogger.config.compressionType | quote }}
+  
+  # Ultra-low latency configuration
+  performance_mode: "ultra_low_latency"
+  zero_copy_enabled: "true"
+  lock_free_enabled: "true"
+  simd_enabled: "true"
+  
+  # Trading-specific configuration
+  trading_log_levels: |
+    trade=1
+    order=2
+    market_data=3
+    risk=4
+    portfolio=5
+    
+  # Transport configuration
+  redis_url: {{ if .Values.redis.enabled }}"redis://{{ include "ultra-logging-engine.fullname" . }}-redis-master:6379"{{ else }}""{{ end }}
+  kafka_brokers: {{ if .Values.kafka.enabled }}"{{ include "ultra-logging-engine.fullname" . }}-kafka:9092"{{ else }}""{{ end }}
+---
+{{- if .Values.logAggregator.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-log-aggregator-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "log-aggregator.labels" . | nindent 4 }}
+data:
+  listen_address: {{ .Values.logAggregator.config.listenAddress | quote }}
+  buffer_size: {{ .Values.logAggregator.config.bufferSize | quote }}
+  flush_interval_ms: {{ .Values.logAggregator.config.flushIntervalMs | quote }}
+  max_connections: {{ .Values.logAggregator.config.maxConnections | quote }}
+  
+  # Routing rules for trading components
+  routing_rules: |
+    trading.*: ["trading-logs", "audit-logs"]
+    market-data.*: ["market-data-logs", "analytics-logs"]
+    risk.*: ["risk-logs", "compliance-logs"]
+    portfolio.*: ["portfolio-logs", "position-logs"]
+    order.*: ["order-logs", "execution-logs"]
+{{- end }}
+---
+{{- if .Values.metricsCollector.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-metrics-collector-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "metrics-collector.labels" . | nindent 4 }}
+data:
+  listen_address: {{ .Values.metricsCollector.config.listenAddress | quote }}
+  collection_interval_ms: {{ .Values.metricsCollector.config.collectionIntervalMs | quote }}
+  retention_hours: {{ .Values.metricsCollector.config.retentionHours | quote }}
+  enable_prometheus: {{ .Values.metricsCollector.config.enablePrometheus | quote }}
+  prometheus_port: {{ .Values.metricsCollector.config.prometheusPort | quote }}
+  
+  # Trading metrics configuration
+  trading_metrics: |
+    # Order metrics
+    trading_orders_total: "Total number of orders processed"
+    trading_orders_per_second: "Orders processed per second"
+    trading_order_latency_microseconds: "Order processing latency in microseconds"
+    
+    # Trade metrics  
+    trading_trades_total: "Total number of trades executed"
+    trading_trade_volume: "Total trade volume"
+    trading_trade_latency_microseconds: "Trade execution latency in microseconds"
+    
+    # Market data metrics
+    market_data_messages_total: "Total market data messages processed"
+    market_data_latency_microseconds: "Market data processing latency"
+    
+    # Risk metrics
+    risk_checks_total: "Total risk checks performed"
+    risk_violations_total: "Total risk violations detected"
+    risk_check_latency_microseconds: "Risk check latency"
+    
+    # System metrics
+    system_cpu_usage_percent: "CPU usage percentage"
+    system_memory_usage_bytes: "Memory usage in bytes"
+    system_network_rx_bytes: "Network bytes received"
+    system_network_tx_bytes: "Network bytes transmitted"
+{{- end }}
+{{- end }}
