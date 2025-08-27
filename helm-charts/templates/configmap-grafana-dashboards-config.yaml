@@ -1,0 +1,23 @@
+{{- if .Values.grafana.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-grafana-dashboards-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ultra-logging-engine.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'trading-logs'
+        orgId: 1
+        folder: 'Trading Platform'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards
+{{- end }}

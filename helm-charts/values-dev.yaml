@@ -123,6 +123,28 @@ kafka:
 prometheus:
   enabled: false
 
+# Development Grafana Configuration
+grafana:
+  enabled: true
+  adminPassword: "dev123"
+  ingress:
+    enabled: true
+    className: "nginx"
+    hosts:
+      - host: "grafana-logs-dev.local"
+        paths:
+          - path: "/"
+            pathType: Prefix
+  persistence:
+    enabled: false  # Use emptyDir for development
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
 # Minimal security for development
 podSecurityContext:
   fsGroup: 1000

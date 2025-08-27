@@ -1,0 +1,12 @@
+dependencies:
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 17.17.1
+- name: kafka
+  repository: https://charts.bitnami.com/bitnami
+  version: 22.1.6
+- name: prometheus
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 23.4.0
+digest: sha256:9fbf01e7c8d0cf6c7447e6d01fd2340d5b63e630cf7b92ad4d3298654f8ab47c
+generated: "2025-08-27T15:11:17.7032013-04:00"

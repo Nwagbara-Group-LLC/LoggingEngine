@@ -1,0 +1,24 @@
+{{- if .Values.grafana.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-grafana
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ultra-logging-engine.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+  {{- with .Values.grafana.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.grafana.service.type }}
+  ports:
+    - port: {{ .Values.grafana.service.port | default 3000 }}
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "ultra-logging-engine.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+{{- end }}

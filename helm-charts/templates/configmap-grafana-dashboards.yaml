@@ -1,0 +1,153 @@
+{{- if .Values.grafana.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-grafana-dashboards
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ultra-logging-engine.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  trading-platform-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Trading Platform Logs Overview",
+        "tags": ["trading", "logs", "platform"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Log Volume by Level",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "rate(ultra_logger_log_entries_total[5m])",
+                "legendFormat": "{{ "{{level}}" }}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "unit": "reqps"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Error Rate",
+            "type": "stat", 
+            "targets": [
+              {
+                "expr": "rate(ultra_logger_log_entries_total{level=\"ERROR\"}[5m])",
+                "legendFormat": "Errors/sec"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 1},
+                    {"color": "red", "value": 10}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Trade Execution Logs",
+            "type": "logs",
+            "targets": [
+              {
+                "expr": "{component=\"trade-executor\"}"
+              }
+            ],
+            "gridPos": {"h": 12, "w": 24, "x": 0, "y": 8}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "5s"
+      }
+    }
+
+  trading-performance.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Trading Performance Metrics",
+        "tags": ["trading", "performance", "latency"],
+        "panels": [
+          {
+            "id": 1,
+            "title": "Log Processing Latency",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(ultra_logger_processing_duration_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.50, rate(ultra_logger_processing_duration_seconds_bucket[5m]))",
+                "legendFormat": "50th percentile"
+              }
+            ],
+            "yAxes": [
+              {
+                "unit": "s",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ultra_logger_memory_usage_bytes",
+                "legendFormat": "Memory Used"
+              }
+            ],
+            "yAxes": [
+              {
+                "unit": "bytes"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 3,
+            "title": "Buffer Utilization",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ultra_logger_buffer_utilization_percent",
+                "legendFormat": "Buffer %"
+              }
+            ],
+            "yAxes": [
+              {
+                "unit": "percent",
+                "max": 100
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          }
+        ],
+        "time": {
+          "from": "now-1h", 
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }
+{{- end }}

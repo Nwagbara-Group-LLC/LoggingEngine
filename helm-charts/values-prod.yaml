@@ -171,6 +171,39 @@ prometheus:
         cpu: 1000m
         memory: 2Gi
 
+# Production Grafana Configuration
+grafana:
+  enabled: true
+  replicaCount: 2  # HA for production
+  adminPassword: "secure-prod-password-change-me"
+  ingress:
+    enabled: true
+    className: "nginx"
+    protocol: "https"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: "grafana-logs.yourdomain.com"
+        paths:
+          - path: "/"
+            pathType: Prefix
+    tls:
+      - secretName: grafana-logs-tls
+        hosts:
+          - "grafana-logs.yourdomain.com"
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: "premium-ssd"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
 # Pod Security Context
 podSecurityContext:
   fsGroup: 1000
