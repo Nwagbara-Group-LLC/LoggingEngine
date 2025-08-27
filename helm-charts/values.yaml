@@ -33,10 +33,44 @@ ultraLogger:
   
   config:
     logLevel: "info"
+    outputFormat: "json"
+    enableStructuredLogging: true
+    maxLogSize: "100MB"
+    maxBackups: 5
+    maxAge: 30
     bufferSize: 1048576  # 1MB buffer
-    flushIntervalMs: 100
+    flushInterval: "100ms"
+    enableCompression: true
     compressionEnabled: true
     compressionType: "lz4"  # Fast compression
+    
+    # Trading specific log levels
+    tradingLogLevels:
+      orderExecution: "info"
+      marketData: "debug"
+      riskManagement: "warn"
+      strategy: "info"
+      portfolio: "info"
+    
+    # Output destinations
+    outputs:
+      console:
+        enabled: true
+        format: "json"
+      file:
+        enabled: true
+        path: "/app/logs/ultra-logger.log"
+        rotationSize: "100MB"
+      redis:
+        enabled: false
+        host: "redis"
+        port: 6379
+        streamKey: "trading-logs"
+      kafka:
+        enabled: false
+        brokers: 
+          - "kafka:9092"
+        topic: "trading-logs"
     
   # Service configuration
   service:

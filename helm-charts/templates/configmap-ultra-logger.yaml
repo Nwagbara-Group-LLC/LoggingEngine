@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ultra-logging-engine.fullname" . }}-ultra-logger
+  labels:
+    {{- include "ultra-logging-engine.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ultra-logger
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  # Ultra Logger Configuration
+  ultra-logger-config.yaml: |
+    # Ultra-fast logging configuration
+    log_level: {{ .Values.ultraLogger.config.logLevel | quote }}
+    output_format: {{ .Values.ultraLogger.config.outputFormat | quote }}
+    enable_structured_logging: {{ .Values.ultraLogger.config.enableStructuredLogging }}
+    max_log_size: {{ .Values.ultraLogger.config.maxLogSize | quote }}
+    max_backups: {{ .Values.ultraLogger.config.maxBackups }}
+    max_age: {{ .Values.ultraLogger.config.maxAge }}
+    
+    # Performance settings
+    buffer_size: {{ .Values.ultraLogger.config.bufferSize }}
+    flush_interval: {{ .Values.ultraLogger.config.flushInterval | quote }}
+    enable_compression: {{ .Values.ultraLogger.config.enableCompression }}
+    
+    # Trading specific log levels
+    trading_log_levels: |
+      order_execution: {{ .Values.ultraLogger.config.tradingLogLevels.orderExecution | quote }}
+      market_data: {{ .Values.ultraLogger.config.tradingLogLevels.marketData | quote }}
+      risk_management: {{ .Values.ultraLogger.config.tradingLogLevels.riskManagement | quote }}
+      strategy: {{ .Values.ultraLogger.config.tradingLogLevels.strategy | quote }}
+      portfolio: {{ .Values.ultraLogger.config.tradingLogLevels.portfolio | quote }}
+    
+    # Output destinations
+    outputs:
+      console:
+        enabled: {{ .Values.ultraLogger.config.outputs.console.enabled }}
+        format: {{ .Values.ultraLogger.config.outputs.console.format | quote }}
+      file:
+        enabled: {{ .Values.ultraLogger.config.outputs.file.enabled }}
+        path: {{ .Values.ultraLogger.config.outputs.file.path | quote }}
+        rotation_size: {{ .Values.ultraLogger.config.outputs.file.rotationSize | quote }}
+      {{- if .Values.ultraLogger.config.outputs.redis.enabled }}
+      redis:
+        enabled: {{ .Values.ultraLogger.config.outputs.redis.enabled }}
+        host: {{ .Values.ultraLogger.config.outputs.redis.host | quote }}
+        port: {{ .Values.ultraLogger.config.outputs.redis.port }}
+        stream_key: {{ .Values.ultraLogger.config.outputs.redis.streamKey | quote }}
+      {{- end }}
+      {{- if .Values.ultraLogger.config.outputs.kafka.enabled }}
+      kafka:
+        enabled: {{ .Values.ultraLogger.config.outputs.kafka.enabled }}
+        brokers: 
+          {{- range .Values.ultraLogger.config.outputs.kafka.brokers }}
+          - {{ . | quote }}
+          {{- end }}
+        topic: {{ .Values.ultraLogger.config.outputs.kafka.topic | quote }}
+      {{- end }}
+
+  # Environment variables
+  LOG_LEVEL: {{ .Values.ultraLogger.config.logLevel | quote }}
+  OUTPUT_FORMAT: {{ .Values.ultraLogger.config.outputFormat | quote }}
+  BUFFER_SIZE: {{ .Values.ultraLogger.config.bufferSize | quote }}
+  FLUSH_INTERVAL: {{ .Values.ultraLogger.config.flushInterval | quote }}
+  RUST_LOG: {{ .Values.ultraLogger.config.logLevel | lower | quote }}
+  
+  # Trading specific environment variables
+  TRADING_ORDER_LOG_LEVEL: {{ .Values.ultraLogger.config.tradingLogLevels.orderExecution | quote }}
+  TRADING_MARKET_DATA_LOG_LEVEL: {{ .Values.ultraLogger.config.tradingLogLevels.marketData | quote }}
+  TRADING_RISK_LOG_LEVEL: {{ .Values.ultraLogger.config.tradingLogLevels.riskManagement | quote }}
+  TRADING_STRATEGY_LOG_LEVEL: {{ .Values.ultraLogger.config.tradingLogLevels.strategy | quote }}
+  TRADING_PORTFOLIO_LOG_LEVEL: {{ .Values.ultraLogger.config.tradingLogLevels.portfolio | quote }}

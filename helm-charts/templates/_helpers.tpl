@@ -114,7 +114,7 @@ app.kubernetes.io/component: metrics-collector
 Trading-optimized resource configuration
 */}}
 {{- define "trading.resources" -}}
-{{- if .performance.enableHugepages }}
+{{- if and . .enableHugepages }}
 hugepages-2Mi: {{ .resources.requests.memory }}
 {{- end }}
 {{- end }}
@@ -123,10 +123,10 @@ hugepages-2Mi: {{ .resources.requests.memory }}
 Trading-optimized node selector
 */}}
 {{- define "trading.nodeSelector" -}}
-{{- if .performance.numaTopology }}
+{{- if and . .numaTopology }}
 node.kubernetes.io/numa-topology: "true"
 {{- end }}
-{{- if .performance.cpuAffinity }}
+{{- if and . .cpuAffinity }}
 node.kubernetes.io/cpu-manager-policy: "static"
 {{- end }}
 {{- end }}
@@ -135,10 +135,10 @@ node.kubernetes.io/cpu-manager-policy: "static"
 Performance annotations
 */}}
 {{- define "trading.annotations" -}}
-{{- if .performance.enableHugepages }}
+{{- if and . .enableHugepages }}
 kubernetes.io/hugepages: "true"
 {{- end }}
-{{- if .performance.cpuAffinity }}
-cpu-manager.alpha.kubernetes.io/cpuset: {{ .performance.isolateCpus | quote }}
+{{- if and . .cpuAffinity }}
+cpu-manager.alpha.kubernetes.io/cpuset: {{ .isolateCpus | quote }}
 {{- end }}
 {{- end }}
