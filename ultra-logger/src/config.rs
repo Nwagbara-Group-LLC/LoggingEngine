@@ -1,8 +1,6 @@
 //! Configuration module for ultra-low latency logging
 
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::time::Duration;
 
 /// Configuration for the ultra-low latency logger
 #[derive(Debug, Clone, Serialize, Deserialize)]

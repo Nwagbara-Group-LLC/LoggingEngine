@@ -2,7 +2,6 @@
 
 use crate::error::{LoggingError, Result};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 use crossbeam_utils::CachePadded;
 use parking_lot::RwLock;
 

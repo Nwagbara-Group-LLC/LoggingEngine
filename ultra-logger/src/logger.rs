@@ -9,7 +9,6 @@ use crate::metrics::LoggingMetrics;
 use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use dashmap::DashMap;
