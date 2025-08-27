@@ -90,7 +90,7 @@ impl LogAggregator {
         Ok(())
     }
 
-    pub async fn process_log_entry(&self, level: &str, module: &str, message: &str) {
+    pub async fn process_log_entry(&self, _level: &str, _module: &str, _message: &str) {
         // In a real implementation, this would process and batch log entries
         // For testing, we just simulate processing
         tokio::time::sleep(Duration::from_nanos(100)).await;

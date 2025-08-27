@@ -4,7 +4,6 @@
 //! with support for counters, gauges, histograms, and custom aggregations.
 
 use std::time::Duration;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use anyhow::Result;

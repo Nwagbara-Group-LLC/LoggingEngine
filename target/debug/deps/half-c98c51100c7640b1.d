@@ -1,0 +1,12 @@
+C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\target\debug\deps\half-c98c51100c7640b1.d: C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\lib.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\bfloat.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\bfloat\convert.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16\arch.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16\arch\aarch64.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\leading_zeros.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\slice.rs
+
+C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\target\debug\deps\libhalf-c98c51100c7640b1.rmeta: C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\lib.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\bfloat.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\bfloat\convert.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16\arch.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16\arch\aarch64.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\leading_zeros.rs C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\slice.rs
+
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\lib.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\bfloat.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\bfloat\convert.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16\arch.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\binary16\arch\aarch64.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\leading_zeros.rs:
+C:\Users\ikenn\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\half-2.6.0\src\slice.rs:
