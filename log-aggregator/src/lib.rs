@@ -68,16 +68,22 @@ pub struct LogEntry {
 
 impl LogAggregator {
     pub fn new(config: AggregatorConfig) -> Result<Self> {
+        let (sender, _receiver) = mpsc::channel(config.batch_size);
         Ok(Self {
             config,
             running: Arc::new(RwLock::new(false)),
-            sender: None,
+            sender: Some(sender),
         })
     }
 
     pub async fn start(&self) -> Result<()> {
         let mut running = self.running.write().await;
         *running = true;
+        
+        // Log the configuration being used
+        println!("Starting aggregator with batch_size: {}, timeout: {:?}", 
+                 self.config.batch_size, 
+                 self.config.batch_timeout);
         
         // In a real implementation, this would start background tasks
         // For now, just mark as started
@@ -90,10 +96,26 @@ impl LogAggregator {
         Ok(())
     }
 
-    pub async fn process_log_entry(&self, _level: &str, _module: &str, _message: &str) {
+    pub async fn process_log_entry(&self, level: &str, module: &str, message: &str) {
+        // Create log entry
+        let entry = LogEntry {
+            level: level.to_string(),
+            module: module.to_string(),
+            message: message.to_string(),
+            timestamp: chrono::Utc::now(),
+        };
+        
+        // Send to processing channel if available
+        if let Some(sender) = &self.sender {
+            if let Err(_) = sender.try_send(entry) {
+                // Channel full, would implement backpressure handling here
+                eprintln!("Log aggregator channel full, dropping entry");
+            }
+        }
+        
         // In a real implementation, this would process and batch log entries
         // For testing, we just simulate processing
-        tokio::time::sleep(Duration::from_nanos(100)).await;
+        tokio::time::sleep(std::time::Duration::from_nanos(100)).await;
     }
 
     pub async fn get_metrics(&self) -> HashMap<String, u64> {
