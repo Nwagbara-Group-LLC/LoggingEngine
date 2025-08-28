@@ -1,0 +1,1 @@
+C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\target\debug\liblog_aggregator.rlib: C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\log-aggregator\src\lib.rs C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\ultra-logger\src\lib.rs
