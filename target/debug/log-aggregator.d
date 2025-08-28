@@ -1,1 +1,0 @@
-C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\target\debug\log-aggregator.exe: C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\log-aggregator\src\lib.rs C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\log-aggregator\src\main.rs C:\Users\ikenn\Projects\TradingPlatform\LoggingEngine\ultra-logger\src\lib.rs
