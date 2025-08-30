@@ -165,7 +165,7 @@ async fn main() -> Result<()> {
         },
         Commands::Benchmark => {
             println!("🧪 Running performance benchmarks (will exit after completion)...");
-            run_benchmarks().await?;
+            run_benchmarks_with_config(bench_config).await?;
         },
     }
     
@@ -236,12 +236,11 @@ async fn print_configuration(engine: &hostbuilder::LoggingEngineHost) -> Result<
 }
 
 /// Run performance benchmarks
-async fn run_benchmarks() -> Result<()> {
+async fn run_benchmarks_with_config(config: BenchmarkConfig) -> Result<()> {
     use std::time::Instant;
     use std::sync::atomic::Ordering;
+    use std::sync::Arc;
     use ultra_logger::UltraLogger;
-    
-    let config = BenchmarkConfig::from_env().unwrap_or_else(|_| BenchmarkConfig::get_defaults(&Environment::Development));
     
     println!("🚀 Running Ultra-High Performance LoggingEngine Benchmarks");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -249,15 +248,15 @@ async fn run_benchmarks() -> Result<()> {
     
     // Test 1: Ultra-High Throughput Test
     println!("🧪 Test 1: Ultra-High Throughput Test ({} messages)", config.throughput_test_message_count);
-    let logger = UltraLogger::new("ultra-benchmark".to_string());
+    let logger = Arc::new(UltraLogger::new("ultra-benchmark".to_string()));
     let start = Instant::now();
     
-    // Parallel message sending
+    // Parallel message sending using the same logger instance
     let mut handles = Vec::new();
     let chunk_size = config.throughput_chunk_size();
     
     for chunk in 0..config.throughput_test_chunk_count {
-        let logger_clone = UltraLogger::new(format!("chunk-{}", chunk));
+        let logger_clone = Arc::clone(&logger);
         let message_count = chunk_size;
         let handle = tokio::spawn(async move {
             for i in 0..message_count {
@@ -290,6 +289,9 @@ async fn run_benchmarks() -> Result<()> {
     println!("   • Average batch size: {}", stats.avg_batch_size.load(Ordering::Relaxed));
     println!("   • Average latency: {:.2}μs", stats.average_latency_us());
     
+    // Shutdown the logger to clean up background tasks
+    logger.shutdown().await.unwrap();
+    
     // Test 2: Batch Processing Efficiency
     println!("\n🧪 Test 2: Batch Processing Efficiency");
     let batch_logger = UltraLogger::new("batch-test".to_string());
@@ -311,6 +313,9 @@ async fn run_benchmarks() -> Result<()> {
     println!("   • Messages per batch: {}", config.batch_test_message_count as f64 / batch_stats.batches_processed.load(Ordering::Relaxed) as f64);
     println!("   • Batch throughput: {:.0} messages/second", config.batch_test_message_count as f64 / batch_time.as_secs_f64());
     
+    // Shutdown batch logger
+    batch_logger.shutdown().await.unwrap();
+    
     // Test 3: Memory Efficiency Test
     println!("\n🧪 Test 3: Memory Pool and Lock-Free Operations");
     let mem_logger = UltraLogger::new("memory-test".to_string());
@@ -330,6 +335,9 @@ async fn run_benchmarks() -> Result<()> {
     println!("   • Messages processed: {}", mem_stats.messages_logged.load(Ordering::Relaxed));
     println!("   • Zero-copy operations: ✅");
     println!("   • Lock-free throughput: {:.0} msg/sec", config.memory_test_iterations as f64 / mem_time.as_secs_f64());
+    
+    // Shutdown memory logger
+    mem_logger.shutdown().await.unwrap();
     
     // Test 4: Latency Distribution Analysis
     println!("\n🧪 Test 4: Latency Distribution Analysis");
@@ -356,9 +364,12 @@ async fn run_benchmarks() -> Result<()> {
     println!("   • P99.9 latency: {:.2}μs", p999.as_micros() as f64);
     println!("   • Max latency: {:.2}μs", max_latency.as_micros() as f64);
     
+    // Shutdown latency logger
+    latency_logger.shutdown().await.unwrap();
+    
     // Test 5: System Resource Usage
     println!("\n🧪 Test 5: System Resource Analysis");
-    let _resource_logger = UltraLogger::new("resource-test".to_string());
+    let resource_logger = UltraLogger::new("resource-test".to_string());
     
     let process = std::process::Command::new("powershell")
         .arg("-Command")
@@ -412,6 +423,9 @@ async fn run_benchmarks() -> Result<()> {
     } else {
         println!("🎯 ⚠️  Latency above ultra-low target");
     }
+    
+    // Shutdown the final resource logger
+    resource_logger.shutdown().await.unwrap();
     
     Ok(())
 }

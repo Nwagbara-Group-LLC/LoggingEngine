@@ -1,10 +1,13 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ultra_logger::{UltraLogger, LogLevel};
-use tokio::runtime::Runtime;
 
 fn bench_ultra_logger_sync(c: &mut Criterion) {
-    let rt = Runtime::new().unwrap();
-    let logger = UltraLogger::new("benchmark".to_string());
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    
+    // Create logger once outside the benchmark loop
+    let logger = rt.block_on(async {
+        UltraLogger::new("benchmark".to_string())
+    });
     
     c.bench_function("ultra_logger_info", |b| {
         b.iter(|| {
@@ -21,7 +24,8 @@ fn bench_log_entry_creation(c: &mut Criterion) {
             ultra_logger::LogEntry::new(
                 black_box(LogLevel::Info),
                 black_box("service".to_string()),
-                black_box("message".to_string())
+                black_box("message".to_string()),
+                black_box(1u64)
             )
         });
     });

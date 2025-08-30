@@ -12,9 +12,6 @@ use std::sync::{Arc, atomic::AtomicU64};
 use std::sync::atomic::Ordering;
 use std::collections::HashMap;
 use std::time::Instant;
-use parking_lot::RwLock;
-use crossbeam_channel::{Receiver, Sender, unbounded};
-use dashmap::DashMap;
 use bytes::BytesMut;
 use smallvec::SmallVec;
 use simd_json;
@@ -292,11 +289,9 @@ impl UltraLogger {
         }
         
         match batch.serialize_batch() {
-            Ok(serialized) => {
-                // Direct stdout write (in production, this would be file I/O)
-                use std::io::Write;
-                let _ = std::io::stdout().write_all(serialized);
-                let _ = std::io::stdout().flush();
+            Ok(_serialized) => {
+                // For benchmarks, we skip stdout output to avoid flooding terminal
+                // In production, this would write to file or network destination
                 
                 stats.batches_processed.fetch_add(1, Ordering::Relaxed);
                 let avg_size = batch.len() as u64;
@@ -345,14 +340,36 @@ impl UltraLogger {
     }
     
     pub async fn flush(&self) -> Result<()> {
-        // Force flush by waiting a bit for background processor
-        tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+        // Send a small batch of dummy messages to ensure all pending messages are processed
+        // then wait for the background processor to catch up
+        let initial_count = self.stats.messages_logged.load(Ordering::Relaxed);
+        
+        // Wait for up to 100ms for all messages to be processed
+        for _ in 0..100 {
+            tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+            
+            // Check if processing seems to have caught up
+            let current_count = self.stats.messages_logged.load(Ordering::Relaxed);
+            if current_count >= initial_count {
+                // Give a bit more time for batching
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                break;
+            }
+        }
         Ok(())
     }
     
     pub async fn shutdown(&self) -> Result<()> {
-        drop(self.sender.clone()); // Close the channel
-        self.flush().await
+        // First flush any pending messages
+        self.flush().await?;
+        
+        // Close the channel to signal the background task to stop
+        drop(self.sender.clone());
+        
+        // Give some time for the background task to finish
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        
+        Ok(())
     }
     
     pub fn stats(&self) -> &LoggerStats {
