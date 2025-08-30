@@ -1,0 +1,217 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "LoggingEngine - Ultra-High Performance Analytics",
+    "tags": ["logging", "performance", "hft", "analytics"],
+    "timezone": "browser",
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "🚀 Throughput (Messages/Second)",
+        "type": "stat",
+        "targets": [{
+          "expr": "rate(ultra_logger_messages_total[1m])",
+          "legendFormat": "Messages/sec"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "min": 0,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 100000},
+                {"color": "green", "value": 1000000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "⚡ P99 Latency (Microseconds)",
+        "type": "stat",
+        "targets": [{
+          "expr": "histogram_quantile(0.99, rate(ultra_logger_latency_microseconds_bucket[5m]))",
+          "legendFormat": "P99 Latency"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "µs",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 1000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "🔥 Lock-Free Channel Efficiency",
+        "type": "stat",
+        "targets": [{
+          "expr": "(rate(ultra_logger_channel_sends_total[1m]) - rate(ultra_logger_channel_blocks_total[1m])) / rate(ultra_logger_channel_sends_total[1m]) * 100",
+          "legendFormat": "Efficiency %"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 95},
+                {"color": "green", "value": 99}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "💾 Memory Pool Utilization",
+        "type": "stat",
+        "targets": [{
+          "expr": "ultra_logger_memory_pool_used / ultra_logger_memory_pool_total * 100",
+          "legendFormat": "Pool Usage %"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "📊 Latency Distribution",
+        "type": "histogram",
+        "targets": [{
+          "expr": "ultra_logger_latency_microseconds_bucket",
+          "legendFormat": "{{le}} µs"
+        }],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+      },
+      {
+        "id": 6,
+        "title": "📈 Throughput Trend",
+        "type": "timeseries",
+        "targets": [{
+          "expr": "rate(ultra_logger_messages_total[1m])",
+          "legendFormat": "Messages/sec"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "tooltip": false,
+                "vis": false,
+                "legend": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+      },
+      {
+        "id": 7,
+        "title": "🔍 Log Levels Distribution",
+        "type": "piechart",
+        "targets": [{
+          "expr": "sum by (level) (rate(ultra_logger_messages_total[5m]))",
+          "legendFormat": "{{level}}"
+        }],
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 12}
+      },
+      {
+        "id": 8,
+        "title": "🏗️ SIMD Batch Efficiency",
+        "type": "gauge",
+        "targets": [{
+          "expr": "rate(ultra_logger_batches_processed_total[1m]) * ultra_logger_batch_avg_size",
+          "legendFormat": "Batch Throughput"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "min": 0,
+            "max": 10000000,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 1000000},
+                {"color": "green", "value": 5000000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 12}
+      },
+      {
+        "id": 9,
+        "title": "💎 Resource Utilization",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total[1m]) * 100",
+            "legendFormat": "CPU %"
+          },
+          {
+            "expr": "process_resident_memory_bytes / 1024 / 1024",
+            "legendFormat": "Memory MB"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 12}
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "query": "label_values(ultra_logger_messages_total, instance)",
+          "refresh": 1
+        }
+      ]
+    }
+  }
+}

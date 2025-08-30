@@ -1,0 +1,154 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "LoggingEngine - Log Search & Analytics",
+    "tags": ["logging", "search", "query", "troubleshooting"],
+    "timezone": "browser",
+    "time": {"from": "now-1h", "to": "now"},
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "🔍 Real-Time Log Search",
+        "type": "logs",
+        "targets": [{
+          "expr": "{service=\"ultra-logger\"} |= `${search_term}`",
+          "refId": "A"
+        }],
+        "options": {
+          "showTime": true,
+          "showLabels": true,
+          "showCommonLabels": false,
+          "wrapLogMessage": true,
+          "prettifyLogMessage": true,
+          "enableLogDetails": true,
+          "sortOrder": "Descending"
+        },
+        "gridPos": {"h": 12, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "📈 Log Volume by Service",
+        "type": "timeseries",
+        "targets": [{
+          "expr": "sum by (service) (rate({service=~\".*\"} [1m]))",
+          "legendFormat": "{{service}}"
+        }],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12}
+      },
+      {
+        "id": 3,
+        "title": "⚠️ Error Rate by Level",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate({level=\"error\"} [5m]))",
+            "legendFormat": "Errors/sec"
+          },
+          {
+            "expr": "sum(rate({level=\"warn\"} [5m]))",
+            "legendFormat": "Warnings/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 10}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 12}
+      },
+      {
+        "id": 4,
+        "title": "🏷️ Top Log Sources",
+        "type": "table",
+        "targets": [{
+          "expr": "topk(10, sum by (service) (count_over_time({service=~\".*\"} [1h])))",
+          "format": "table"
+        }],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "service": "Service",
+                "Value": "Log Count"
+              }
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 12}
+      },
+      {
+        "id": 5,
+        "title": "🕒 Log Timeline Heatmap",
+        "type": "heatmap",
+        "targets": [{
+          "expr": "sum by (le) (rate(ultra_logger_latency_microseconds_bucket[5m]))",
+          "format": "heatmap",
+          "legendFormat": "{{le}}"
+        }],
+        "gridPos": {"h": 8, "w": 18, "x": 0, "y": 20}
+      },
+      {
+        "id": 6,
+        "title": "💾 Storage Usage",
+        "type": "gauge",
+        "targets": [{
+          "expr": "sum(ultra_logger_log_file_size_bytes) / 1024 / 1024 / 1024",
+          "legendFormat": "Log Storage GB"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "decbytes",
+            "min": 0,
+            "max": 1000,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 500},
+                {"color": "red", "value": 800}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 20}
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "search_term",
+          "type": "textbox",
+          "query": "",
+          "label": "Search Term",
+          "description": "Enter text to search in logs"
+        },
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(service)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*"
+        },
+        {
+          "name": "level",
+          "type": "query", 
+          "query": "label_values(level)",
+          "refresh": 1,
+          "includeAll": true,
+          "allValue": ".*"
+        }
+      ]
+    }
+  }
+}

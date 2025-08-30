@@ -1,15 +1,18 @@
 apiVersion: v2
 name: ultra-logging-engine
-description: Ultra-low latency logging infrastructure for trading systems
+description: Ultra-high performance logging infrastructure for HFT systems with 8M+ msg/sec throughput
 type: application
-version: 0.1.0
-appVersion: "1.0"
+version: 0.2.0
+appVersion: "2.0"
 keywords:
   - logging
   - trading
   - high-frequency
   - ultra-low-latency
   - observability
+  - simd
+  - lock-free
+  - batch-processing
 home: https://github.com/trading-platform/logging-engine
 sources:
   - https://github.com/trading-platform/logging-engine
@@ -29,3 +32,7 @@ dependencies:
     version: 23.x.x
     repository: https://prometheus-community.github.io/helm-charts
     condition: prometheus.enabled
+  - name: grafana
+    version: 6.x.x
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled

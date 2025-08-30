@@ -8,46 +8,14 @@ metadata:
     {{- include "ultra-logging-engine.labels" . | nindent 4 }}
     app.kubernetes.io/component: grafana
 data:
-  trading-platform-overview.json: |
-    {
-      "dashboard": {
-        "id": null,
-        "title": "Trading Platform Logs Overview",
-        "tags": ["trading", "logs", "platform"],
-        "timezone": "browser",
-        "panels": [
-          {
-            "id": 1,
-            "title": "Log Volume by Level",
-            "type": "stat",
-            "targets": [
-              {
-                "expr": "rate(ultra_logger_log_entries_total[5m])",
-                "legendFormat": "{{ "{{level}}" }}"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "color": {"mode": "palette-classic"},
-                "unit": "reqps"
-              }
-            },
-            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
-          },
-          {
-            "id": 2,
-            "title": "Error Rate",
-            "type": "stat", 
-            "targets": [
-              {
-                "expr": "rate(ultra_logger_log_entries_total{level=\"ERROR\"}[5m])",
-                "legendFormat": "Errors/sec"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "color": {"mode": "thresholds"},
-                "thresholds": {
+  ultra-performance-analytics.json: |
+{{ .Files.Get "grafana-dashboards/ultra-performance-analytics.json" | indent 4 }}
+  
+  log-search-analytics.json: |
+{{ .Files.Get "grafana-dashboards/log-search-analytics.json" | indent 4 }}
+  
+  logging-performance.json: |
+{{ .Files.Get "grafana-dashboards/logging-performance.json" | indent 4 }}
                   "steps": [
                     {"color": "green", "value": null},
                     {"color": "yellow", "value": 1},

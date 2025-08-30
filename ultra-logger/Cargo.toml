@@ -14,6 +14,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
+
+# High-performance dependencies
 crossbeam-channel = { workspace = true }
 crossbeam-utils = { workspace = true }
 dashmap = { workspace = true }
@@ -24,14 +26,17 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 bytes = { workspace = true }
 futures = { workspace = true }
-once_cell = { workspace = true }
-arc-swap = { workspace = true }
-flume = { workspace = true }
-ringbuf = { workspace = true }
-simd-json = { workspace = true }
-ahash = { workspace = true }
-mimalloc = { workspace = true }
-fastrand = { workspace = true }
+
+# Memory management and SIMD
+smallvec = "1.11"
+simd-json = "0.13"
+
+# Lock-free structures
+lockfree = "0.5"
+flume = "0.11"
+
+# Direct I/O and system calls (Windows compatible)
+winapi = { version = "0.3", features = ["winbase", "fileapi", "handleapi", "winnt"] }
 
 [features]
 default = ["async", "compression"]

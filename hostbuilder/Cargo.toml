@@ -1,6 +1,17 @@
 [package]
 name = "hostbuilder"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+# Core async runtime
+tokio = { workspace = true }
+anyhow = { workspace = true }
+
+# Internal workspace dependencies
+ultra-logger = { path = "../ultra-logger" }
+log-aggregator = { path = "../log-aggregator" }  
+metrics-collector = { path = "../metrics-collector" }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
