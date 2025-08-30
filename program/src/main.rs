@@ -6,9 +6,11 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use hostbuilder::{LoggingEngineBuilder, Environment};
-use ultra_logger::LogLevel;
+use hostbuilder::LoggingEngineBuilder;
 use std::time::Duration;
+
+// Use centralized configuration
+use config::{Environment, LogLevel, BenchmarkConfig, ConfigLoader};
 
 #[derive(Parser)]
 #[command(name = "logging-engine")]
@@ -80,7 +82,7 @@ enum Commands {
     #[command(name = "run-for")]
     RunFor {
         /// Duration in seconds to run before automatic shutdown
-        #[arg(short, long)]
+        #[arg(short, long, default_value = "60")]
         duration: u64,
     },
 }
@@ -88,6 +90,9 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    
+    // Load benchmark configuration
+    let bench_config = BenchmarkConfig::from_env()?;
     
     // Parse environment
     let environment = match cli.environment.to_lowercase().as_str() {
@@ -114,7 +119,7 @@ async fn main() -> Result<()> {
         .enable_performance_monitoring(cli.enable_metrics)
         .enable_distributed_tracing(cli.enable_tracing)
         .shutdown_timeout(Duration::from_secs(cli.shutdown_timeout))
-        .build();
+        .build()?;
     
     // Execute command - default to Start for continuous operation
     match cli.command.unwrap_or(Commands::Start) {
@@ -169,18 +174,28 @@ async fn main() -> Result<()> {
 
 /// Print startup banner with system information
 fn print_banner(environment: &Environment) {
+    let config = BenchmarkConfig::from_env().unwrap_or_else(|_| BenchmarkConfig::get_defaults(&Environment::Development));
     println!("
 ╔══════════════════════════════════════════════════════════════════════╗
 ║                        🚀 LoggingEngine                              ║  
 ║              Ultra-Low Latency Logging Infrastructure                ║
 ║                   Built for High-Frequency Trading                   ║
 ╠══════════════════════════════════════════════════════════════════════╣
-║  Environment: {:<10} │  Target Latency: <1μs              ║
-║  Architecture: Lock-free     │  Throughput: 1M+ logs/sec          ║  
+║  Environment: {:<10} │  Target Latency: <{}μs              ║
+║  Architecture: Lock-free     │  Throughput: {}+ logs/sec          ║  
 ║  Optimization: SIMD          │  Memory: Zero-copy operations       ║
-║  Reliability: 99.99% uptime  │  Deployment: Kubernetes Ready       ║
+║  Reliability: {:.2}% uptime  │  Deployment: Kubernetes Ready       ║
 ╚══════════════════════════════════════════════════════════════════════╝
-", format!("{:?}", environment));
+", 
+    format!("{:?}", environment),
+    config.target_latency_us,
+    if config.target_throughput_per_sec >= 1_000_000 { 
+        format!("{}M", config.target_throughput_per_sec / 1_000_000)
+    } else {
+        format!("{}K", config.target_throughput_per_sec / 1_000)
+    },
+    config.target_reliability_percent
+);
 }
 
 /// Print health status information
@@ -201,42 +216,52 @@ async fn print_configuration(engine: &hostbuilder::LoggingEngineHost) -> Result<
     println!("⚙️  LoggingEngine Configuration");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("Status: {:?}", engine.get_status().await);
+    let config = BenchmarkConfig::from_env().unwrap_or_else(|_| BenchmarkConfig::get_defaults(&Environment::Development));
+    
     println!("Components:");
     println!("  • Log Aggregator: Enabled");
     println!("  • Metrics Collector: Enabled"); 
     println!("  • Distributed Tracing: Enabled");
     println!("Performance Targets:");
-    println!("  • Latency: <1μs average, <5μs P99");
-    println!("  • Throughput: 1M+ log entries/second");
-    println!("  • Memory: <500MB working set");
+    println!("  • Latency: <{:.1}μs average, <{:.1}μs P99", config.target_latency_us, config.target_p99_latency_us);
+    println!("  • Throughput: {}+ log entries/second", 
+        if config.target_throughput_per_sec >= 1_000_000 { 
+            format!("{}M", config.target_throughput_per_sec / 1_000_000)
+        } else {
+            format!("{}K", config.target_throughput_per_sec / 1_000)
+        }
+    );
+    println!("  • Memory: <{}MB working set", config.target_memory_mb);
     Ok(())
 }
 
 /// Run performance benchmarks
 async fn run_benchmarks() -> Result<()> {
-    use std::time::{Duration, Instant};
+    use std::time::Instant;
     use std::sync::atomic::Ordering;
     use ultra_logger::UltraLogger;
+    
+    let config = BenchmarkConfig::from_env().unwrap_or_else(|_| BenchmarkConfig::get_defaults(&Environment::Development));
     
     println!("🚀 Running Ultra-High Performance LoggingEngine Benchmarks");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("⏳ Testing lock-free, batch-processed, SIMD-optimized logging...\n");
     
     // Test 1: Ultra-High Throughput Test
-    println!("🧪 Test 1: Ultra-High Throughput Test (100K messages)");
+    println!("🧪 Test 1: Ultra-High Throughput Test ({} messages)", config.throughput_test_message_count);
     let logger = UltraLogger::new("ultra-benchmark".to_string());
     let start = Instant::now();
-    let message_count = 100_000;
     
     // Parallel message sending
     let mut handles = Vec::new();
-    let chunk_size = message_count / 10;
+    let chunk_size = config.throughput_chunk_size();
     
-    for chunk in 0..10 {
+    for chunk in 0..config.throughput_test_chunk_count {
         let logger_clone = UltraLogger::new(format!("chunk-{}", chunk));
+        let message_count = chunk_size;
         let handle = tokio::spawn(async move {
-            for i in 0..chunk_size {
-                let msg_id = chunk * chunk_size + i;
+            for i in 0..message_count {
+                let msg_id = chunk as u64 * chunk_size + i;
                 let _ = logger_clone.info(format!("High-frequency message {}", msg_id)).await;
             }
         });
@@ -249,14 +274,14 @@ async fn run_benchmarks() -> Result<()> {
     }
     
     let total_time = start.elapsed();
-    let throughput = message_count as f64 / total_time.as_secs_f64();
+    let throughput = config.throughput_test_message_count as f64 / total_time.as_secs_f64();
     
-    println!("   • Processed {} messages in: {:?}", message_count, total_time);
+    println!("   • Processed {} messages in: {:?}", config.throughput_test_message_count, total_time);
     println!("   • Throughput: {:.0} messages/second", throughput);
-    println!("   • Latency per message: {:.2}μs", total_time.as_micros() as f64 / message_count as f64);
+    println!("   • Latency per message: {:.2}μs", total_time.as_micros() as f64 / config.throughput_test_message_count as f64);
     
     // Give time for background processing
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    tokio::time::sleep(config.throughput_sleep_duration()).await;
     logger.flush().await.unwrap();
     
     let stats = logger.stats();
@@ -270,12 +295,12 @@ async fn run_benchmarks() -> Result<()> {
     let batch_logger = UltraLogger::new("batch-test".to_string());
     let start = Instant::now();
     
-    // Send exactly 640 messages (10 full batches of 64)
-    for i in 0..640 {
+    // Send messages for batch test
+    for i in 0..config.batch_test_message_count {
         let _ = batch_logger.info(format!("Batch test message {}", i)).await;
     }
     
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(config.batch_sleep_duration()).await;
     batch_logger.flush().await.unwrap();
     
     let batch_time = start.elapsed();
@@ -283,28 +308,28 @@ async fn run_benchmarks() -> Result<()> {
     
     println!("   • Batch processing time: {:?}", batch_time);
     println!("   • Batches processed: {}", batch_stats.batches_processed.load(Ordering::Relaxed));
-    println!("   • Messages per batch: {}", 640.0 / batch_stats.batches_processed.load(Ordering::Relaxed) as f64);
-    println!("   • Batch throughput: {:.0} messages/second", 640.0 / batch_time.as_secs_f64());
+    println!("   • Messages per batch: {}", config.batch_test_message_count as f64 / batch_stats.batches_processed.load(Ordering::Relaxed) as f64);
+    println!("   • Batch throughput: {:.0} messages/second", config.batch_test_message_count as f64 / batch_time.as_secs_f64());
     
     // Test 3: Memory Efficiency Test
     println!("\n🧪 Test 3: Memory Pool and Lock-Free Operations");
     let mem_logger = UltraLogger::new("memory-test".to_string());
     let start = Instant::now();
     
-    // Burst of 10K messages to test memory pools
-    for i in 0..10_000 {
+    // Burst of messages to test memory pools
+    for i in 0..config.memory_test_iterations {
         let _ = mem_logger.info(format!("Memory test {}", i)).await;
     }
     
     let mem_time = start.elapsed();
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    tokio::time::sleep(config.memory_sleep_duration()).await;
     mem_logger.flush().await.unwrap();
     
     let mem_stats = mem_logger.stats();
     println!("   • Memory pool test time: {:?}", mem_time);
     println!("   • Messages processed: {}", mem_stats.messages_logged.load(Ordering::Relaxed));
     println!("   • Zero-copy operations: ✅");
-    println!("   • Lock-free throughput: {:.0} msg/sec", 10_000.0 / mem_time.as_secs_f64());
+    println!("   • Lock-free throughput: {:.0} msg/sec", config.memory_test_iterations as f64 / mem_time.as_secs_f64());
     
     // Test 4: Latency Distribution Analysis
     println!("\n🧪 Test 4: Latency Distribution Analysis");

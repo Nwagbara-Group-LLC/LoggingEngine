@@ -7,6 +7,10 @@ edition = "2021"
 # Core async runtime
 tokio = { workspace = true }
 anyhow = { workspace = true }
+serde = { workspace = true }
+
+# Centralized configuration
+config = { path = "../config" }
 
 # Internal workspace dependencies
 ultra-logger = { path = "../ultra-logger" }

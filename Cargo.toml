@@ -5,6 +5,7 @@ members = [
     "ultra-logger",
     "log-aggregator",
     "metrics-collector",
+    "config",
     "benchmarks"
 ]
 resolver = "2"
