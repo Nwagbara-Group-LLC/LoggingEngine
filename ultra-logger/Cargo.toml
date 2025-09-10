@@ -3,47 +3,27 @@ name = "ultra-logger"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description = "Ultra-low latency logger for high-frequency trading"
+description = "Simple, fast logger for high-frequency trading"
 license.workspace = true
 
 [dependencies]
+# Core async runtime
 tokio = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+async-trait = "0.1"
+
+# Serialization
 serde = { workspace = true }
 serde_json = { workspace = true }
-uuid = { workspace = true }
 chrono = { workspace = true }
 
-# High-performance dependencies
-crossbeam-channel = { workspace = true }
-crossbeam-utils = { workspace = true }
-dashmap = { workspace = true }
-parking_lot = { workspace = true }
-memmap2 = { workspace = true }
-lz4_flex = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-bytes = { workspace = true }
-futures = { workspace = true }
-
-# Memory management and SIMD
-smallvec = "1.11"
-simd-json = "0.13"
-
-# Lock-free structures
-lockfree = "0.5"
+# High-performance channels
 flume = "0.11"
 
-# Direct I/O and system calls (Windows compatible)
-winapi = { version = "0.3", features = ["winbase", "fileapi", "handleapi", "winnt"] }
+# Error handling  
+thiserror = { workspace = true }
 
 [features]
-default = ["async", "compression"]
-async = []
-compression = []
-io-uring = []
-metrics = []
+default = []
 
 [lib]
 name = "ultra_logger"
